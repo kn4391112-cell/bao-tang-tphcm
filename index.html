@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bảo Tàng TP.HCM | Khám phá lịch sử và văn hóa</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        nlf: {
+                            red: '#E52B24',       /* Đỏ cờ Giải phóng */
+                            darkRed: '#D32F2F',
+                            blue: '#0055A5',      /* Xanh dương cờ Giải phóng */
+                            darkBlue: '#1565C0',
+                            yellow: '#FFD700',    /* Vàng ngôi sao */
+                            accentYellow: '#FFC107',
+                            lightYellow: '#FFF8E1'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .modal-enter {
+            animation: modalSlideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .flag-accent-bar {
+            background: linear-gradient(90deg, #E52B24 0%, #E52B24 50%, #0055A5 50%, #0055A5 100%);
+        }
+        .image-failed {
+            background: linear-gradient(135deg, #e2e8f0, #f8fafc 55%, #cbd5e1) !important;
+        }
+        .image-failed::after {
+            content: "Ảnh chưa tải được";
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            color: #475569; font-size: 13px; font-weight: 700; letter-spacing: .02em;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col items-center">
+
+    <!-- App Container (Mobile viewport optimized) -->
+    <div class="w-full max-w-7xl bg-white min-h-screen shadow-2xl relative flex flex-col pb-8">
+
+        <!-- HEADER THEME CỜ GIẢI PHÓNG MIỀN NAM -->
+        <header class="relative bg-gradient-to-b from-nlf-red via-nlf-darkRed to-nlf-blue text-white pt-6 pb-7 px-5 md:px-8 md:pt-8 md:pb-9 rounded-b-3xl shadow-xl overflow-hidden">
+            <!-- Nền họa tiết ngôi sao vàng chìm -->
+            <div class="absolute -right-8 -bottom-8 opacity-15 pointer-events-none text-nlf-yellow">
+                <i class="fa-solid fa-star text-[170px]"></i>
+            </div>
+            
+            <!-- Top bar -->
+            <div class="relative z-10 flex justify-between items-center mb-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="bg-nlf-yellow text-slate-900 font-extrabold text-[11px] px-3 py-1 rounded-full shadow-md flex items-center gap-1">
+                        <i class="fa-solid fa-star text-nlf-red"></i> TP. HỒ CHÍ MINH
+                    </span>
+                </div>
+                <button onclick="toggleBookmarkFilter()" id="bookmarkFilterBtn" class="bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 border border-white/20">
+                    <i class="fa-regular fa-bookmark text-nlf-yellow" id="bookmarkBtnIcon"></i>
+                    <span id="bookmarkBtnText">Đã lưu (<span id="favCount">0</span>)</span>
+                </button>
+            </div>
+
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-white drop-shadow">
+                <button type="button" onclick="resetFilters()" title="Về màn hình chính" aria-label="Bảo Tàng TP.HCM - về màn hình chính" class="flex items-center gap-2 text-left hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-nlf-yellow rounded-lg">
+                    <i class="fa-solid fa-landmark text-nlf-yellow"></i> Bảo Tàng TP.HCM
+                </button>
+            </h1>
+            <p class="text-xs text-blue-100 mt-1 font-normal opacity-95">
+                Tra cứu bảo tàng tại Quận 1, 3, 4, 10 & Tân Bình
+            </p>
+
+            <!-- Thanh tìm kiếm nhanh -->
+            <div class="mt-4 relative">
+                <input type="text" id="searchInput" oninput="handleSearch()" 
+                       placeholder="Tìm theo tên bảo tàng, đường..." 
+                       class="w-full bg-white text-slate-800 text-sm pl-10 pr-9 py-3 rounded-2xl shadow-lg focus:outline-none focus:ring-2 focus:ring-nlf-yellow transition placeholder:text-slate-400 font-medium">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 text-sm">
+                    <i class="fa-solid fa-circle-xmark"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CẢM HỨNG DẢI MÀU CỜ CÁCH MẠNG -->
+        <div class="h-1.5 w-full flag-accent-bar shadow-sm"></div>
+
+        <!-- KHU VỰC TAG FILTER (#LOAI_QUAN) -->
+        <section class="mt-4 px-4">
+            <div class="flex items-center justify-between mb-2">
+                <h2 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <i class="fa-solid fa-tags text-nlf-blue"></i> Danh Sách Tags (#LOAI_QUAN)
+                </h2>
+                <button onclick="selectTag('ALL')" class="text-[11px] font-bold text-nlf-blue hover:underline">
+                    Xóa chọn
+                </button>
+            </div>
+
+            <!-- Horizontal Scrolling Chips -->
+            <div class="flex gap-2 overflow-x-auto no-scrollbar py-1 pr-2" id="tagListContainer">
+                <!-- Tag Chips render qua JS -->
+            </div>
+        </section>
+
+        <!-- QUẬN QUICK FILTER -->
+        <section class="mt-3 px-4">
+            <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs font-medium text-slate-600" id="districtFilterContainer">
+                <span class="text-slate-400 text-[11px] whitespace-nowrap font-bold">Khu vực:</span>
+                <button onclick="filterByDistrict('ALL')" class="district-btn active bg-slate-800 text-nlf-yellow font-bold px-3 py-1 rounded-xl text-xs whitespace-nowrap transition">Tất cả</button>
+                <button onclick="filterByDistrict('Quận 1')" class="district-btn bg-slate-100 text-slate-600 px-3 py-1 rounded-xl text-xs whitespace-nowrap transition">Quận 1</button>
+                <button onclick="filterByDistrict('Quận 3')" class="district-btn bg-slate-100 text-slate-600 px-3 py-1 rounded-xl text-xs whitespace-nowrap transition">Quận 3</button>
+                <button onclick="filterByDistrict('Quận 4')" class="district-btn bg-slate-100 text-slate-600 px-3 py-1 rounded-xl text-xs whitespace-nowrap transition">Quận 4</button>
+                <button onclick="filterByDistrict('Quận 10')" class="district-btn bg-slate-100 text-slate-600 px-3 py-1 rounded-xl text-xs whitespace-nowrap transition">Quận 10</button>
+                <button onclick="filterByDistrict('Tân Bình')" class="district-btn bg-slate-100 text-slate-600 px-3 py-1 rounded-xl text-xs whitespace-nowrap transition">Tân Bình</button>
+            </div>
+        </section>
+
+
+        <!-- TRẢI NGHIỆM KHÁM PHÁ: HƯỚNG DẪN VIÊN, TOUR, HỘ CHIẾU -->
+        <section class="mx-4 mt-5 rounded-3xl overflow-hidden border border-amber-100 shadow-sm">
+            <div class="bg-gradient-to-r from-amber-50 via-white to-red-50 p-4 md:p-5">
+                <div class="flex items-start gap-3">
+                    <div class="w-12 h-12 shrink-0 rounded-2xl bg-nlf-red text-white flex items-center justify-center text-xl shadow"><i class="fa-solid fa-compass"></i></div>
+                    <div class="flex-1">
+                        <p class="text-[10px] uppercase tracking-[.18em] font-black text-nlf-red">Trải nghiệm riêng của website</p>
+                        <h2 class="text-xl md:text-2xl font-black text-slate-900">Không chỉ tìm bảo tàng — hãy bắt đầu hành trình</h2>
+                        <p class="text-xs md:text-sm text-slate-600 mt-1">Hỏi hướng dẫn viên ảo, tạo tour theo sở thích và sưu tầm dấu hộ chiếu bảo tàng.</p>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-3 mt-4">
+                    <button onclick="openExperience('guide')" class="text-left bg-white hover:bg-amber-50 border border-amber-100 rounded-2xl p-4 transition shadow-sm">
+                        <span class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center mb-3"><i class="fa-solid fa-comments"></i></span>
+                        <span class="block font-black text-sm">Hướng dẫn viên ảo</span><span class="block text-xs text-slate-500 mt-1">Tìm bảo tàng hợp gu của bạn</span><span class="text-xs text-nlf-red font-extrabold mt-3 block">Trò chuyện →</span>
+                    </button>
+                    <button onclick="openExperience('tour')" class="text-left bg-white hover:bg-amber-50 border border-amber-100 rounded-2xl p-4 transition shadow-sm">
+                        <span class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mb-3"><i class="fa-solid fa-route"></i></span>
+                        <span class="block font-black text-sm">Thiết kế tour</span><span class="block text-xs text-slate-500 mt-1">Tạo lịch khám phá theo thời gian và chủ đề</span><span class="text-xs text-nlf-red font-extrabold mt-3 block">Tạo hành trình →</span>
+                    </button>
+                    <button onclick="openExperience('passport')" class="text-left bg-white hover:bg-amber-50 border border-amber-100 rounded-2xl p-4 transition shadow-sm">
+                        <span class="w-9 h-9 rounded-xl bg-rose-50 text-rose-700 flex items-center justify-center mb-3"><i class="fa-solid fa-passport"></i></span>
+                        <span class="block font-black text-sm">Hộ chiếu bảo tàng</span><span class="block text-xs text-slate-500 mt-1">Đánh dấu nơi đã đi, sưu tầm dấu mộc</span><span class="text-xs text-nlf-red font-extrabold mt-3 block">Mở hộ chiếu →</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="experiencePanel" class="hidden mx-4 mt-4 rounded-3xl border border-slate-200 bg-white shadow-lg overflow-hidden">
+            <div class="flex items-center justify-between bg-slate-900 text-white p-4">
+                <div><p id="experienceEyebrow" class="text-[10px] uppercase tracking-widest text-amber-300 font-black">Hướng dẫn viên ảo</p><h2 id="experienceTitle" class="font-black text-lg">Tui có thể giúp gì cho bà?</h2></div>
+                <button onclick="closeExperience()" aria-label="Đóng" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="guidePanel" class="hidden p-4">
+                <p class="text-sm text-slate-600 mb-3">Chọn sở thích hoặc nhắn câu hỏi. Hướng dẫn viên sẽ gợi ý dựa trên danh sách bảo tàng hiện có trên web.</p>
+                <div class="flex flex-wrap gap-2 mb-4">
+                    <button onclick="guideQuick('lịch sử chiến tranh')" class="rounded-full bg-red-50 text-red-800 border border-red-100 px-3 py-2 text-xs font-bold">⚔️ Lịch sử</button>
+                    <button onclick="guideQuick('nghệ thuật')" class="rounded-full bg-purple-50 text-purple-800 border border-purple-100 px-3 py-2 text-xs font-bold">🎨 Nghệ thuật</button>
+                    <button onclick="guideQuick('đi miễn phí')" class="rounded-full bg-emerald-50 text-emerald-800 border border-emerald-100 px-3 py-2 text-xs font-bold">💸 Tiết kiệm</button>
+                    <button onclick="guideQuick('chụp ảnh đẹp')" class="rounded-full bg-amber-50 text-amber-800 border border-amber-100 px-3 py-2 text-xs font-bold">📸 Chụp ảnh</button>
+                    <button onclick="guideQuick('đi với bạn bè')" class="rounded-full bg-blue-50 text-blue-800 border border-blue-100 px-3 py-2 text-xs font-bold">👯 Đi với bạn</button>
+                </div>
+                <div id="guideMessages" class="space-y-3 max-h-72 overflow-y-auto bg-slate-50 rounded-2xl p-3" aria-live="polite"><div class="max-w-[90%] bg-white border border-slate-200 rounded-2xl rounded-tl-sm p-3 text-sm">Chào bà! Bà thích lịch sử, nghệ thuật, hay muốn tìm nơi đi chơi tiết kiệm? Chọn một chủ đề bên trên hoặc nhắn tui nha.</div></div>
+                <form class="flex gap-2 mt-3" onsubmit="sendGuideMessage(event)"><input id="guideInput" class="min-w-0 flex-1 border border-slate-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300" placeholder="Ví dụ: tui thích nghệ thuật..."/><button class="bg-nlf-red text-white rounded-xl px-4 font-black" type="submit" aria-label="Gửi"><i class="fa-solid fa-paper-plane"></i></button></form>
+            </div>
+            <div id="tourPanel" class="hidden p-4">
+                <p class="text-sm text-slate-600 mb-4">Chọn sở thích để tạo một hành trình gợi ý. Đây là lịch trình tham khảo; nhớ kiểm tra giờ mở cửa trước khi đi.</p>
+                <div class="grid sm:grid-cols-2 gap-3">
+                    <label class="text-xs font-bold text-slate-600">Chủ đề<select id="tourInterest" class="mt-1 w-full border border-slate-200 rounded-xl p-3 text-sm bg-white"><option value="all">Khám phá tổng hợp</option><option value="history">Lịch sử, chiến tranh</option><option value="art">Nghệ thuật, văn hóa</option></select></label>
+                    <label class="text-xs font-bold text-slate-600">Thời lượng<select id="tourDuration" class="mt-1 w-full border border-slate-200 rounded-xl p-3 text-sm bg-white"><option value="2">Khoảng 2 tiếng · 1–2 điểm</option><option value="4">Nửa ngày · tối đa 3 điểm</option><option value="6">Một ngày · tối đa 4 điểm</option></select></label>
+                    <label class="text-xs font-bold text-slate-600">Đi cùng<select id="tourCompany" class="mt-1 w-full border border-slate-200 rounded-xl p-3 text-sm bg-white"><option>Bạn bè</option><option>Một mình</option><option>Gia đình</option><option>Nhóm lớp</option></select></label>
+                    <label class="text-xs font-bold text-slate-600">Khu vực<select id="tourDistrict" class="mt-1 w-full border border-slate-200 rounded-xl p-3 text-sm bg-white"><option value="ALL">Không giới hạn</option><option>Quận 1</option><option>Quận 3</option><option>Quận 4</option><option>Quận 10</option><option>Tân Bình</option></select></label>
+                </div>
+                <button onclick="buildTour()" class="mt-4 w-full bg-nlf-red text-white font-black rounded-xl py-3 hover:opacity-90"><i class="fa-solid fa-wand-magic-sparkles mr-2"></i>Tạo tour cho tui</button>
+                <div id="tourResult" class="mt-4 space-y-3"></div>
+            </div>
+            <div id="passportPanel" class="hidden p-4">
+                <div class="rounded-2xl bg-gradient-to-r from-amber-50 to-rose-50 border border-amber-100 p-4 mb-4"><p class="text-xs font-black uppercase tracking-widest text-amber-800">Hộ chiếu khám phá</p><div class="flex items-end gap-2 mt-1"><span id="passportCount" class="text-4xl font-black text-slate-900">0</span><span class="text-sm text-slate-600 pb-1">dấu mộc đã sưu tầm</span></div><p class="text-xs text-slate-500 mt-2">Hộ chiếu được lưu trên trình duyệt hiện tại của bà.</p></div>
+                <p class="font-black text-sm mb-2">Chọn bảo tàng bà đã ghé để đóng dấu</p><div id="passportMuseumList" class="space-y-2"></div>
+                <button onclick="clearPassport()" class="mt-4 text-xs text-slate-500 underline">Xóa toàn bộ dấu mộc</button>
+            </div>
+        </section>
+
+        <!-- THÔNG BÁO / ĐẾM KẾT QUẢ -->
+        <div class="px-4 mt-4 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-600" id="resultCountText">Đang tải danh sách...</span>
+            <span class="text-[10px] text-nlf-blue bg-blue-50 border border-blue-100 font-extrabold px-2.5 py-0.5 rounded-full" id="activeTagBadge">Tất cả</span>
+        </div>
+
+        <!-- DANH SÁCH BẢO TÀNG (CARD LIST) -->
+        <main class="mt-3 px-4 flex-grow space-y-4 md:grid md:grid-cols-2 xl:grid-cols-3 md:gap-5 md:space-y-0 md:items-stretch" id="museumList">
+            <!-- Render danh sách bảo tàng ở đây bằng JS -->
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="mt-8 px-4 text-center border-t border-slate-200 pt-5">
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <span class="w-2 h-2 rounded-full bg-nlf-red"></span>
+                <span class="w-2 h-2 rounded-full bg-nlf-yellow"></span>
+                <span class="w-2 h-2 rounded-full bg-nlf-blue"></span>
+            </div>
+            <p class="text-xs text-slate-500 font-bold">Khám phá Lịch sử & Văn hóa TP. Hồ Chí Minh</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Tối ưu trải nghiệm cho nhóm bạn trên điện thoại di động</p>
+        </footer>
+    </div>
+
+    <!-- MODAL CHI TIẾT BẢO TÀNG (POPUP) -->
+    <div id="detailModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex justify-center items-end sm:items-center p-0 sm:p-4 transition-all">
+        <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[92vh] overflow-y-auto no-scrollbar shadow-2xl modal-enter relative">
+            
+            <!-- Nút đóng Modal -->
+            <button onclick="closeModal()" class="absolute top-3 right-3 z-30 bg-slate-900/60 hover:bg-slate-900/80 text-white w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-md transition shadow-lg">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- GALLERIES SLIDER / MAIN IMAGE -->
+            <div class="relative h-60 w-full bg-slate-900">
+                <img id="modalImg" src="" alt="Museum photo" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='https://placehold.co/800x500/e2e8f0/334155?text=Anh+bao+tang'" class="w-full h-full object-cover transition-all duration-300">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent"></div>
+                
+                <!-- District badge & Title overlay -->
+                <div class="absolute bottom-3 left-4 right-4 text-white">
+                    <span id="modalDistrictBadge" class="bg-nlf-yellow text-slate-900 font-black text-[10px] uppercase px-2.5 py-0.5 rounded shadow-md"></span>
+                    <h3 id="modalTitle" class="text-xl font-black mt-1.5 text-white leading-tight drop-shadow"></h3>
+                </div>
+
+                <!-- Gallery Navigation Dots -->
+                <div class="absolute top-3 left-4 flex gap-1 z-20" id="galleryThumbs">
+                    <!-- JS Insert thumbs -->
+                </div>
+            </div>
+
+            <!-- Nội dung chi tiết -->
+            <div class="p-5 space-y-4">
+                <!-- Tags badge -->
+                <div class="flex flex-wrap gap-1.5" id="modalTagsContainer"></div>
+
+                <!-- Địa chỉ -->
+                <div class="flex items-start gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                    <div class="w-9 h-9 rounded-xl bg-red-100 text-nlf-red flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-location-dot text-base"></i>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Địa chỉ chính xác</div>
+                        <div id="modalAddress" class="text-xs font-bold text-slate-800 mt-0.5 leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <!-- Giờ mở cửa & Giá vé -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-extrabold uppercase">
+                            <i class="fa-regular fa-clock text-nlf-blue"></i> Giờ mở cửa
+                        </div>
+                        <div id="modalHours" class="text-xs font-bold text-slate-700 mt-1"></div>
+                    </div>
+                    <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                        <div class="flex items-center gap-1.5 text-[10px] text-slate-400 font-extrabold uppercase">
+                            <i class="fa-solid fa-ticket text-nlf-red"></i> Giá vé tham khảo
+                        </div>
+                        <div id="modalTicket" class="text-xs font-bold text-slate-700 mt-1"></div>
+                    </div>
+                </div>
+
+                <!-- Mô tả chi tiết -->
+                <div>
+                    <h4 class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-landmark-flag text-nlf-blue"></i> Giá trị Lịch sử & Văn hóa
+                    </h4>
+                    <p id="modalDesc" class="text-xs leading-relaxed text-slate-600 bg-blue-50/60 p-3.5 rounded-2xl border border-blue-100/60 font-medium"></p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="pt-2 flex gap-3">
+                    <button id="modalFavBtn" onclick="" class="flex-1 border-2 border-slate-200 hover:border-nlf-red text-slate-700 font-bold text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 transition active:scale-95">
+                        <i class="fa-regular fa-bookmark text-nlf-red"></i> Lưu yêu thích
+                    </button>
+                    <a id="modalMapLink" href="#" target="_blank" class="flex-1 bg-gradient-to-r from-nlf-red to-nlf-darkRed hover:from-nlf-darkRed hover:to-nlf-red text-white font-extrabold text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-red-200 transition active:scale-95">
+                        <i class="fa-solid fa-map-location-dot text-sm"></i> Chỉ đường Maps
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // 1. DANH SÁCH TAGS CHÍNH THỨC (#LOAI_QUAN)
+        const TAG_LIST = [
+            { id: '#Lichsuchientranh_Quan1', label: '#Lịch Sử Chiến Tranh Q.1' },
+            { id: '#Lichsuchientranh_Quan3', label: '#Lịch Sử Chiến Tranh Q.3' },
+            { id: '#Lichsuchientranh_Quan4', label: '#Lịch Sử Chiến Tranh Q.4' },
+            { id: '#Lichsuchientranh_QuanTanBinh', label: '#Lịch sử chiến tranh Tân Bình' },
+            { id: '#VanHoa-XaHoi-NgheThuat_Quan1', label: '#Văn Hóa - Nghệ Thuật Q.1' },
+            { id: '#VanHoa-XaHoi-NgheThuat_Quan3', label: '#Văn Hóa - Nghệ Thuật Q.3' },
+            { id: '#VanHoa-XaHoi-NgheThuat_Quan10', label: '#Văn Hóa - Nghệ Thuật Q.10' }
+        ];
+
+        // 2. DỮ LIỆU BẢO TÀNG VỚI MẢNG HÌNH ẢNH THỰC TẾ CHẤT LƯỢNG CAO
+        const MUSEUMS = [
+            {
+                id: 'bt-chung-tich-chien-tranh',
+                name: 'Bảo tàng Chứng Tích Chiến Tranh',
+                address: '28 Võ Văn Tần, Phường Võ Thị Sáu, Quận 3, TP.HCM',
+                district: 'Quận 3',
+                tags: ['#Lichsuchientranh_Quan3'],
+                // Ảnh thực tế sân bảo tàng & hiện vật máy bay/xe tăng thực tế
+                images: [
+                    'https://ak-d.tripcdn.com/images/0EQ1b224x99hd7e80F814.jpg?proc=source%2Ftrip',
+                    'https://ak-d.tripcdn.com/images/0EQ1b224x99hd7e80F814.jpg?proc=source%2Ftrip'
+                ],
+                hours: '07:30 - 17:30 (Hằng ngày)',
+                ticket: '40.000 VNĐ / Người',
+                description: 'Nơi lưu giữ hàng ngàn tư liệu, hiện vật và hình ảnh chân thực về các cuộc chiến tranh tại Việt Nam. Trưng bày máy bay, xe tăng thực tế ngoài sân và các gian phòng triển lãm chuyên đề.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+Ch%E1%BB%A9ng+t%C3%ADch+Chi%E1%BA%BFn+tranh+28+V%C3%B5+V%C2%83n+T%E1%BA%A7n'
+            },
+            {
+                id: 'bt-phu-nu-nam-bo',
+                name: 'Bảo tàng Phụ Nữ Nam Bộ',
+                address: '202 Võ Thị Sáu, Phường Võ Thị Sáu, Quận 3, TP.HCM',
+                district: 'Quận 3',
+                tags: ['#Lichsuchientranh_Quan3', '#VanHoa-XaHoi-NgheThuat_Quan3'],
+                images: [
+                    'https://app-api.glodival.vn/storage/4/images/southern-womens-museum-1762159384cqG2O.jpg',
+                    'https://app-api.glodival.vn/storage/4/images/southern-womens-museum-1762159384cqG2O.jpg'
+                ],
+                hours: '07:30 - 17:00 (Thứ 2 - Chủ Nhật)',
+                ticket: 'Miễn phí tham quan',
+                description: 'Tái hiện lịch sử truyền thống đấu tranh kiên cường, áo dài truyền thống và những đóng góp to lớn của người phụ nữ Nam Bộ trong kháng chiến và công cuộc phát triển đất nước.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+Ph%E1%BB%A5+n%E1%BB%AF+Nam+B%E1%BB%99+202+V%C3%B5+Th%E1%BB%8B+S%C3%A1u'
+            },
+            {
+                id: 'bt-lich-su-tphcm',
+                name: 'Bảo tàng Lịch sử Thành Phố Hồ Chí Minh',
+                address: '2 Nguyễn Bỉnh Khiêm, Phường Bến Nghé, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#Lichsuchientranh_Quan1', '#VanHoa-XaHoi-NgheThuat_Quan1'],
+                images: [
+                    'https://vietnamtourism.vn/imguploads/tourist/2014/TPHoChiMinh/BTLichsuvntphcm/30BTLSVietnam01.jpg',
+                    'https://vietnamtourism.vn/imguploads/tourist/2014/TPHoChiMinh/BTLichsuvntphcm/30BTLSVietnam01.jpg'
+                ],
+                hours: '08:00 - 11:30 | 13:00 - 17:00',
+                ticket: '30.000 VNĐ / Người',
+                description: 'Kiến trúc Đông Dương cổ kính nằm ngay lối vào Thảo Cầm Viên. Trưng bày hơn 40.000 hiện vật lịch sử Việt Nam từ thời nguyên thủy đến hết nhà Nguyễn và các văn hóa cổ phía Nam.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+L%E1%BB%8Bch+s%E1%BB%B1+TPHCM+2+Nguy%E1%BB%85n+B%E1%BB%89nh+Khi%C3%AAm'
+            },
+            {
+                id: 'bt-chien-dich-ho-chi-minh',
+                name: 'Bảo tàng Chiến dịch Hồ Chí Minh',
+                address: '2 Lê Duẩn, Phường Bến Nghé, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#Lichsuchientranh_Quan1'],
+                images: [
+                    'https://statics.vinpearl.com/Ho-Chi-Minh-Campaign-Museum_1742308028.jpg'
+                ],
+                hours: '07:30 - 11:00 | 13:30 - 16:30',
+                ticket: 'Miễn phí tham quan',
+                description: 'Nơi tái hiện toàn bộ diễn biến Chiến dịch Hồ Chí Minh lịch sử mùa xuân năm 1975. Nổi bật với sa bàn điện tử hiện đại tái hiện 5 mũi tiến quân giải phóng Sài Gòn.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+Chi%E1%BA%BFn+d%E1%BB%8Bch+H%E1%BB%93+Ch%C3%AD+Minh+2+L%C3%AA+Du%E1%BA%A9n'
+            },
+            {
+                id: 'bt-ton-duc-thang',
+                name: 'Bảo tàng Tôn Đức Thắng',
+                address: '5 Tôn Đức Thắng, Phường Bến Nghé, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#Lichsuchientranh_Quan1'],
+                images: [
+                    'https://baotangtonducthang.vn/upload/filemanage/z4766334399729_cf94ba7d6139a98a98f7e30ce41336b3.jpg'
+                ],
+                hours: '07:30 - 11:30 | 13:30 - 17:00',
+                ticket: 'Miễn phí',
+                description: 'Lưu giữ nhiều tư liệu, hình ảnh và hiện vật quý giá về cuộc đời cách mạng kiên trung của Chủ tịch Tôn Đức Thắng - người bác kính yêu của phong trào công nhân Việt Nam.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+T%C3%B4n+%C4%90%E1%BB%A9c+Th%E1%BA%AFng+5+T%C3%B4n+%C4%90%E1%BB%A9c+Th%E1%BA%AFng'
+            },
+            {
+                id: 'bt-tp-ho-chi-minh',
+                name: 'Bảo tàng Thành Phố Hồ Chí Minh',
+                address: '65 Lý Tự Trọng, Phường Bến Nghé, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#Lichsuchientranh_Quan1'],
+                images: [
+                    'https://commons.wikimedia.org/wiki/Special:FilePath/Ho_Chi_Minh_City_Museum.jpg?width=1200',
+                    'https://commons.wikimedia.org/wiki/Special:FilePath/Ho_Chi_Minh_City_Museum.jpg?width=1200'
+                ],
+                hours: '08:00 - 17:00 (Hằng ngày)',
+                ticket: '30.000 VNĐ / Người',
+                description: 'Dinh thự tân cổ điển Pháp xây dựng từ năm 1890. Nơi trưng bày tiến trình lịch sử, thiên nhiên, khảo cổ, thương cảng Sài Gòn và cuộc đấu tranh cách mạng của nhân dân thành phố.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+Th%C3%A0nh+ph%E1%BB%91+H%E1%BB%93+Ch%C3%AD+Minh+65+L%C3%BD+T%E1%BB%B1+Tr%E1%BB%8Dng'
+            },
+            {
+                id: 'dinh-doc-lap',
+                name: 'Dinh Độc Lập (Hội trường Thống Nhất)',
+                address: '135 Nam Kỳ Khởi Nghĩa, Phường Bến Thành, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#Lichsuchientranh_Quan1'],
+                images: [
+                    'https://cdn.24h.com.vn/upload/2-2025/images/2025-04-24/1745494360-7332----nh-minh-h---a---ngang-width1920height1080.jpg'
+                ],
+                hours: '08:00 - 16:30 (Hằng ngày)',
+                ticket: '40.000 - 65.000 VNĐ',
+                description: 'Di tích quốc gia đặc biệt, nơi ghi dấu sự kiện ngày 30/4/1975 lịch sử. Tham quan hệ thống phòng làm việc, phòng tổng thống, hầm chỉ huy chiến tranh và xe tăng 390.',
+                mapUrl: 'https://maps.google.com/?q=Dinh+%C4%90%E1%BB%99c+L%E1%BA%ADp+135+Nam+K%E1%BB%B3+Kh%E1%BB%9Fi+Ngh%C3%AEa'
+            },
+            {
+                id: 'ben-nha-rong',
+                name: 'Bến Nhà Rồng - Bảo tàng Hồ Chí Minh',
+                address: '1 Nguyễn Tất Thành, Phường 12, Quận 4, TP.HCM',
+                district: 'Quận 4',
+                tags: ['#Lichsuchientranh_Quan4'],
+                images: [
+                    'https://cafefcdn.com/203337114487263232/2022/9/22/photo-8-1663852672514412348474.jpg',
+                    'https://cafefcdn.com/203337114487263232/2022/9/22/photo-8-1663852672514412348474.jpg'
+                ],
+                hours: '07:30 - 11:30 | 13:30 - 17:00',
+                ticket: '20.000 VNĐ / Người',
+                description: 'Nơi người thanh niên Nguyễn Tất Thành bước xuống tàu Amiral Latouche-Tréville ra đi tìm đường cứu nước năm 1911. Tọa lạc ngay bên bờ sông Sài Gòn thơ mộng.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+H%E1%BB%93+Ch%C3%AD+Minh+1+Nguy%E1%BB%85n+T%E1%BA%A5t+Th%C3%A0nh'
+            },
+            {
+                id: 'bt-my-thuat-tphcm',
+                name: 'Bảo tàng Mỹ Thuật Thành Phố Hồ Chí Minh',
+                address: '97 Phó Đức Chính, Phường Nguyễn Thái Bình, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#VanHoa-XaHoi-NgheThuat_Quan1'],
+                images: [
+                    'https://commons.wikimedia.org/wiki/Special:FilePath/B%E1%BA%A3o_t%C3%A0ng_M%E1%BB%B9_thu%E1%BA%ADt_Th%C3%A0nh_ph%E1%BB%91_H%E1%BB%93_Ch%C3%AD_Minh.jpg?width=1200',
+                    'https://commons.wikimedia.org/wiki/Special:FilePath/B%E1%BA%A3o_t%C3%A0ng_M%E1%BB%B9_thu%E1%BA%ADt_Th%C3%A0nh_ph%E1%BB%91_H%E1%BB%93_Ch%C3%AD_Minh.jpg?width=1200'
+                ],
+                hours: '08:00 - 17:00 (Hằng ngày)',
+                ticket: '30.000 VNĐ / Người',
+                description: 'Tòa nhà kiến trúc Á - Âu tráng lệ của chú Hỏa thời xưa. Trưng bày tác phẩm sơn mài, tranh lụa, điêu khắc nghệ thuật kinh điển của các họa sĩ hàng đầu Việt Nam.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+M%E1%BB%B9+thu%E1%BA%ADt+TPHCM+97+Ph%C3%B3+%C4%90%E1%BB%A9c+Ch%C3%ADnh'
+            },
+            {
+                id: 'bt-dia-chat',
+                name: 'Bảo tàng Địa Chất',
+                address: '2 Nguyễn Bỉnh Khiêm, Phường Bến Nghé, Quận 1, TP.HCM',
+                district: 'Quận 1',
+                tags: ['#VanHoa-XaHoi-NgheThuat_Quan1'],
+                images: [
+                    'https://www.vietnamairlines.com/~/media/SEO-images/2025%20SEO/Traffic%20TA/MN/museum%20in%20ho%20chi%20minh%20city/the-exterior-of-the-museum-exudes-a-rustic-and-ancient-beauty.jpg?la=en'
+                ],
+                hours: '08:00 - 16:30 (Thứ 2 - Thứ 6)',
+                ticket: 'Miễn phí',
+                description: 'Lưu giữ hơn 3.000 mẫu khoáng vật, đá quý, hóa thạch địa chất độc đáo quý hiếm khai thác khắp lãnh thổ Việt Nam.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+%C4%90%E1%BA%A1i+ch%E1%BA%A5t+2+Nguy%E1%BB%85n+B%E1%BB%89nh+Khi%C3%AAm'
+            },
+            {
+                id: 'bt-y-hoc-co-truyen',
+                name: 'Bảo tàng Y học Cổ truyền Việt Nam (FITO Museum)',
+                address: '41 Hoàng Dư Khương, Phường 12, Quận 10, TP.HCM',
+                district: 'Quận 10',
+                tags: ['#VanHoa-XaHoi-NgheThuat_Quan10'],
+                images: [
+                    'https://ik.imagekit.io/tvlk/xpe-asset/AyJ40ZAo1DOyPyKLZ9c3RGQHTP2oT4ZXW%2BQmPVVkFQiXFSv42UaHGzSmaSzQ8DO5QIbWPZuF%2BVkYVRk6gh-Vg4ECbfuQRQ4pHjWJ5Rmbtkk%3D/6191086972432/Fito-Museum-Ticket-in-Ho-Chi-Minh-City-8f929571-53cc-4f6a-a984-d9d5776be15e.jpeg?tr=dpr-2',
+                    'https://ik.imagekit.io/tvlk/xpe-asset/AyJ40ZAo1DOyPyKLZ9c3RGQHTP2oT4ZXW%2BQmPVVkFQiXFSv42UaHGzSmaSzQ8DO5QIbWPZuF%2BVkYVRk6gh-Vg4ECbfuQRQ4pHjWJ5Rmbtkk%3D/6191086972432/Fito-Museum-Ticket-in-Ho-Chi-Minh-City-8f929571-53cc-4f6a-a984-d9d5776be15e.jpeg?tr=dpr-2'
+                ],
+                hours: '08:30 - 17:00 (Hằng ngày)',
+                ticket: '180.000 VNĐ / Người',
+                description: 'Bảo tàng Y học cổ truyền tư nhân độc đáo với kiến trúc gỗ cổ 6 tầng. Trưng bày các dụng cụ bốc thuốc, dao thái thuốc, bình gốm cổ và sách y học Tu Tĩnh - Hải Thượng Lãn Ông.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+Y+h%E1%BB%8Dc+C%E1%BB%95+truy%E1%BB%81n+41+Ho%C3%A0ng+D%C6%B0+Kh%C6%B0%C6%A1ng'
+            }
+,
+            {
+                id: 'bt-quan-khu-7',
+                name: 'Bảo tàng Quân khu 7',
+                address: '247 Hoàng Văn Thụ, Phường 1, Tân Bình, TP.HCM',
+                district: 'Tân Bình',
+                tags: ['#Lichsuchientranh_QuanTanBinh'],
+                images: ['https://commons.wikimedia.org/wiki/Special:FilePath/M-48_Tank_at_the_No_7_Army_Museum,_Saigon.jpg?width=1200'],
+                hours: '07:30 - 11:30 | 13:00 - 16:30 (Nghỉ thứ 2)',
+                ticket: 'Miễn phí với khách Việt Nam',
+                description: 'Bảo tàng lịch sử quân sự tại 247 Hoàng Văn Thụ, lưu giữ tư liệu và hiện vật về quá trình đấu tranh, xây dựng và bảo vệ Tổ quốc.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+Qu%C3%A2n+khu+7+247+Ho%C3%A0ng+V%C4%83n+Th%E1%BB%A5'
+            },
+            {
+                id: 'bt-luc-luong-vu-trang-mien-dong-nam-bo',
+                name: 'Bảo tàng Lực lượng Vũ trang Miền Đông Nam Bộ',
+                address: '247 Hoàng Văn Thụ, Phường 1, Tân Bình, TP.HCM',
+                district: 'Tân Bình',
+                tags: ['#Lichsuchientranh_QuanTanBinh'],
+                images: ['https://commons.wikimedia.org/wiki/Special:FilePath/M-48_Tank_at_the_No_7_Army_Museum,_Saigon.jpg?width=1200'],
+                hours: '07:30 - 11:30 | 13:00 - 16:30 (Nghỉ thứ 2)',
+                ticket: 'Miễn phí với khách Việt Nam',
+                description: 'Không gian trưng bày lịch sử lực lượng vũ trang miền Đông Nam Bộ, gồm tư liệu kháng chiến và hiện vật quân sự.',
+                mapUrl: 'https://maps.google.com/?q=B%E1%BA%A3o+t%C3%A0ng+L%E1%BB%B1c+l%C6%B0%E1%BB%A3ng+V%C5%A9+trang+Mi%E1%BB%81n+%C4%90%C3%B4ng+Nam+B%E1%BB%99+247+Ho%C3%A0ng+V%C4%83n+Th%E1%BB%A5'
+            }
+        ];
+
+        // 3. APPLICATION STATE
+        let activeTag = 'ALL';
+        let activeDistrict = 'ALL';
+        let searchQuery = '';
+        let showOnlyBookmarks = false;
+        let favoriteIds = JSON.parse(localStorage.getItem('fav_museums_v2') || '[]');
+        let activeModalImageIndex = 0;
+        let currentModalMuseum = null;
+
+        // 4. INIT ON LOAD
+        window.addEventListener('DOMContentLoaded', () => {
+            renderTagChips();
+            updateFavCount();
+            filterAndRender();
+        });
+
+        // 5. RENDER CHIP TAGS
+        function renderTagChips() {
+            const container = document.getElementById('tagListContainer');
+            
+            let html = `
+                <button onclick="selectTag('ALL')" 
+                        class="chip-btn px-3.5 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition border ${activeTag === 'ALL' ? 'bg-nlf-red text-white border-nlf-red shadow-md scale-105' : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'}">
+                    ⭐ Tất cả Tags
+                </button>
+            `;
+
+            TAG_LIST.forEach(tag => {
+                const isActive = activeTag === tag.id;
+                const isWarHistory = tag.id.includes('Lichsuchientranh');
+                const badgeDot = isWarHistory ? 'bg-nlf-red' : 'bg-nlf-blue';
+
+                html += `
+                    <button onclick="selectTag('${tag.id}')" 
+                            class="chip-btn px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition border flex items-center gap-1.5 ${isActive ? 'bg-slate-900 text-nlf-yellow border-slate-900 shadow-md scale-105' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-400'}">
+                        <span class="w-2 h-2 rounded-full ${badgeDot}"></span>
+                        ${tag.id}
+                    </button>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // 6. CHỌN TAG
+        function selectTag(tagId) {
+            activeTag = tagId;
+            showOnlyBookmarks = false;
+            updateBookmarkBtnUI();
+            renderTagChips();
+            
+            const badge = document.getElementById('activeTagBadge');
+            badge.innerText = tagId === 'ALL' ? 'Tất cả' : tagId;
+
+            filterAndRender();
+        }
+
+        // 7. LỌC KHU VỰC QUẬN
+        function filterByDistrict(district) {
+            activeDistrict = district;
+            // Chọn quận sẽ lọc độc lập, không bị tag của quận khác giữ lại.
+            activeTag = 'ALL';
+            document.getElementById('activeTagBadge').innerText = 'Tất cả';
+            renderTagChips();
+            
+            const btns = document.querySelectorAll('.district-btn');
+            btns.forEach(btn => {
+                // So sánh chính xác để 'Quận 1' không khớp nhầm với 'Quận 10'.
+                const label = btn.innerText.trim();
+                const selected = district === 'ALL'
+                    ? label === 'Tất cả'
+                    : label === district;
+                if (selected) {
+                    btn.className = 'district-btn active bg-slate-900 text-nlf-yellow font-black px-3 py-1 rounded-xl text-xs whitespace-nowrap transition shadow-sm';
+                } else {
+                    btn.className = 'district-btn bg-slate-100 text-slate-600 font-medium px-3 py-1 rounded-xl text-xs whitespace-nowrap transition hover:bg-slate-200';
+                }
+            });
+
+            filterAndRender();
+        }
+
+        // 8. TÌM KIẾM TỰ ĐỘNG
+        function handleSearch() {
+            const val = document.getElementById('searchInput').value.trim();
+            searchQuery = val.toLowerCase();
+            
+            const clearBtn = document.getElementById('clearSearchBtn');
+            if (val.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            filterAndRender();
+        }
+
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            searchQuery = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            filterAndRender();
+        }
+
+        // 9. LỌC BẢO TÀNG YÊU THÍCH
+        function toggleBookmarkFilter() {
+            showOnlyBookmarks = !showOnlyBookmarks;
+            updateBookmarkBtnUI();
+            filterAndRender();
+        }
+
+        function updateBookmarkBtnUI() {
+            const icon = document.getElementById('bookmarkBtnIcon');
+            const btn = document.getElementById('bookmarkFilterBtn');
+            
+            if (showOnlyBookmarks) {
+                btn.className = "bg-nlf-yellow text-slate-900 px-3 py-1.5 rounded-full text-xs font-extrabold transition flex items-center gap-1.5 shadow-md border border-nlf-yellow";
+                icon.className = "fa-solid fa-bookmark text-nlf-red";
+            } else {
+                btn.className = "bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-full text-xs font-semibold transition flex items-center gap-1.5 border border-white/20";
+                icon.className = "fa-regular fa-bookmark text-nlf-yellow";
+            }
+        }
+
+        // 10. LỌC VÀ HIỂN THỊ DANH SÁCH CARD
+        function filterAndRender() {
+            const listContainer = document.getElementById('museumList');
+            
+            const filtered = MUSEUMS.filter(m => {
+                const matchTag = (activeTag === 'ALL') || m.tags.includes(activeTag);
+                const norm = value => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+                const matchDistrict = (activeDistrict === 'ALL') || norm(m.district) === norm(activeDistrict);
+                const matchSearch = searchQuery === '' || 
+                                    m.name.toLowerCase().includes(searchQuery) || 
+                                    m.address.toLowerCase().includes(searchQuery);
+                const matchFav = !showOnlyBookmarks || favoriteIds.includes(m.id);
+
+                return matchTag && matchDistrict && matchSearch && matchFav;
+            });
+
+            document.getElementById('resultCountText').innerText = showOnlyBookmarks 
+                ? `Đang xem ${filtered.length} bảo tàng đã lưu` 
+                : `Tìm thấy ${filtered.length} bảo tàng`;
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 px-4 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                        <div class="w-12 h-12 bg-red-50 text-nlf-red rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-building-columns text-xl"></i>
+                        </div>
+                        <p class="text-sm font-bold text-slate-700">Chưa tìm thấy bảo tàng phù hợp</p>
+                        <p class="text-xs text-slate-400 mt-1">Bạn hãy thử chọn lại tag khác hoặc đổi từ khóa tìm kiếm</p>
+                        <button onclick="resetFilters()" class="mt-4 bg-nlf-blue text-white text-xs px-4 py-2.5 rounded-xl font-extrabold shadow-md active:scale-95 transition">
+                            Đặt lại tất cả bộ lọc
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(m => {
+                const isFav = favoriteIds.includes(m.id);
+                const mainImg = m.images[0];
+
+                // Badges
+                const tagsHtml = m.tags.map(t => {
+                    const isWar = t.includes('Lichsuchientranh');
+                    return `<span onclick="event.stopPropagation(); selectTag('${t}')" class="text-[10px] px-2 py-0.5 rounded-md font-bold ${isWar ? 'bg-red-50 text-nlf-red border border-red-100 hover:bg-red-100' : 'bg-blue-50 text-nlf-blue border border-blue-100 hover:bg-blue-100'}">${t}</span>`;
+                }).join(' ');
+
+                html += `
+                    <div onclick="openModal('${m.id}')" class="bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-lg transition duration-200 overflow-hidden cursor-pointer flex flex-col relative group">
+                        
+                        <!-- Real Image -->
+                        <div class="relative h-48 w-full bg-slate-200 overflow-hidden">
+                            <img src="${mainImg}" alt="Ảnh ${m.name}" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.style.display='none';this.parentElement.classList.add('image-failed')" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/60 via-transparent to-transparent"></div>
+                            
+                            <!-- District Tag -->
+                            <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-nlf-yellow font-black text-[10px] px-2.5 py-1 rounded-lg border border-white/10">
+                                <i class="fa-solid fa-location-dot text-nlf-red mr-1"></i>${m.district}
+                            </span>
+
+                            <!-- Favorite Button -->
+                            <button onclick="toggleFav(event, '${m.id}')" class="absolute top-3 right-3 bg-white/80 backdrop-blur-md text-slate-800 w-8 h-8 rounded-full flex items-center justify-center hover:bg-white transition shadow-md active:scale-90">
+                                <i class="${isFav ? 'fa-solid text-nlf-red' : 'fa-regular'} fa-bookmark text-sm"></i>
+                            </button>
+
+                            <!-- Mini Ticket Info Overlay -->
+                            <span class="absolute bottom-2.5 left-3 text-white text-[10px] font-semibold bg-black/40 backdrop-blur-sm px-2 py-0.5 rounded-md">
+                                <i class="fa-solid fa-ticket text-nlf-yellow mr-1"></i>${m.ticket}
+                            </span>
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="p-4 flex flex-col justify-between flex-grow">
+                            <div>
+                                <h3 class="font-bold text-slate-900 text-base leading-snug group-hover:text-nlf-red transition">${m.name}</h3>
+                                <p class="text-xs text-slate-500 mt-1 line-clamp-1 flex items-center gap-1 font-medium">
+                                    <i class="fa-solid fa-map-pin text-slate-400 text-[10px]"></i> ${m.address}
+                                </p>
+                            </div>
+
+                            <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                                <div class="flex flex-wrap gap-1">
+                                    ${tagsHtml}
+                                </div>
+                                <span class="text-xs font-black text-nlf-blue flex items-center gap-1 shrink-0 ml-1">
+                                    Xem <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            listContainer.innerHTML = html;
+        }
+
+        // 11. OPEN MODAL & GALLERY
+        function openModal(id) {
+            const m = MUSEUMS.find(item => item.id === id);
+            if (!m) return;
+
+            currentModalMuseum = m;
+            activeModalImageIndex = 0;
+
+            document.getElementById('modalTitle').innerText = m.name;
+            document.getElementById('modalDistrictBadge').innerText = m.district;
+            document.getElementById('modalAddress').innerText = m.address;
+            document.getElementById('modalHours').innerText = m.hours;
+            document.getElementById('modalTicket').innerText = m.ticket;
+            document.getElementById('modalDesc').innerText = m.description;
+            document.getElementById('modalMapLink').href = m.mapUrl;
+
+            // Render tags
+            const tagsContainer = document.getElementById('modalTagsContainer');
+            tagsContainer.innerHTML = m.tags.map(t => `<span class="bg-slate-100 text-slate-700 font-extrabold text-[10px] px-2.5 py-1 rounded-lg">${t}</span>`).join('');
+
+            // Setup image gallery
+            updateModalImageDisplay();
+
+            // Setup fav button
+            updateModalFavBtn(m.id);
+
+            const modal = document.getElementById('detailModal');
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function updateModalImageDisplay() {
+            if (!currentModalMuseum) return;
+            const img = document.getElementById('modalImg');
+            img.style.display = 'block';
+            img.parentElement.classList.remove('image-failed');
+            img.onerror = function () { this.onerror = null; this.style.display = 'none'; this.parentElement.classList.add('image-failed'); };
+            img.src = currentModalMuseum.images[activeModalImageIndex];
+
+            // Render gallery dots/thumbs if multiple images
+            const thumbsContainer = document.getElementById('galleryThumbs');
+            if (currentModalMuseum.images.length > 1) {
+                thumbsContainer.innerHTML = currentModalMuseum.images.map((imgUrl, idx) => `
+                    <button onclick="changeModalImage(${idx})" class="w-2.5 h-2.5 rounded-full transition ${idx === activeModalImageIndex ? 'bg-nlf-yellow scale-125 shadow' : 'bg-white/50 hover:bg-white'}"></button>
+                `).join('');
+            } else {
+                thumbsContainer.innerHTML = '';
+            }
+        }
+
+        function changeModalImage(idx) {
+            activeModalImageIndex = idx;
+            updateModalImageDisplay();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('detailModal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+            currentModalMuseum = null;
+        }
+
+        // 12. FAVORITES MANAGEMENT
+        function toggleFav(e, id) {
+            if (e) e.stopPropagation();
+
+            const idx = favoriteIds.indexOf(id);
+            if (idx > -1) {
+                favoriteIds.splice(idx, 1);
+            } else {
+                favoriteIds.push(id);
+            }
+
+            localStorage.setItem('fav_museums_v2', JSON.stringify(favoriteIds));
+            updateFavCount();
+            filterAndRender();
+            updateModalFavBtn(id);
+        }
+
+        function updateModalFavBtn(id) {
+            const isFav = favoriteIds.includes(id);
+            const favBtn = document.getElementById('modalFavBtn');
+            favBtn.onclick = (e) => toggleFav(e, id);
+            
+            if (isFav) {
+                favBtn.className = "flex-1 bg-red-50 border-2 border-nlf-red text-nlf-red font-black text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 transition active:scale-95";
+                favBtn.innerHTML = `<i class="fa-solid fa-bookmark text-nlf-red"></i> Đã lưu bảo tàng`;
+            } else {
+                favBtn.className = "flex-1 border-2 border-slate-200 hover:border-nlf-red text-slate-700 font-bold text-xs py-3.5 rounded-2xl flex items-center justify-center gap-2 transition active:scale-95";
+                favBtn.innerHTML = `<i class="fa-regular fa-bookmark text-nlf-red"></i> Lưu bảo tàng`;
+            }
+        }
+
+        function updateFavCount() {
+            document.getElementById('favCount').innerText = favoriteIds.length;
+        }
+
+
+        // TRẢI NGHIỆM: HƯỚNG DẪN VIÊN ẢO, TẠO TOUR VÀ HỘ CHIẾU
+        const PASSPORT_KEY = 'museum_passport_v1';
+        function openExperience(type) {
+            const panel = document.getElementById('experiencePanel');
+            panel.classList.remove('hidden');
+            ['guide','tour','passport'].forEach(k => document.getElementById(k+'Panel').classList.toggle('hidden', k !== type));
+            const meta = {guide:['HƯỚNG DẪN VIÊN ẢO','Tui có thể giúp gì cho bà?'],tour:['TOUR CÁ NHÂN HÓA','Tạo hành trình của riêng bà'],passport:['HỘ CHIẾU BẢO TÀNG','Mỗi chuyến đi, một dấu mộc']};
+            document.getElementById('experienceEyebrow').innerText = meta[type][0];
+            document.getElementById('experienceTitle').innerText = meta[type][1];
+            if(type==='passport') renderPassport();
+            panel.scrollIntoView({behavior:'smooth',block:'start'});
+        }
+        function closeExperience(){ document.getElementById('experiencePanel').classList.add('hidden'); }
+        const guideHistory = [];
+        function guideQuick(text){ document.getElementById('guideInput').value=text; document.getElementById('guideInput').focus(); guideReply(text); }
+        function sendGuideMessage(event){ event.preventDefault(); const input=document.getElementById('guideInput'); const text=input.value.trim(); if(!text)return; input.value=''; guideReply(text); }
+        function appendGuideBubble(text, role='assistant', extraClass='') {
+            const box=document.getElementById('guideMessages');
+            const bubble=document.createElement('div');
+            bubble.className=(role==='user'?'ml-auto max-w-[90%] bg-slate-900 text-white rounded-2xl rounded-tr-sm':'max-w-full bg-white border border-slate-200 rounded-2xl rounded-tl-sm')+' p-3 text-sm '+extraClass;
+            bubble.textContent=text;
+            box.appendChild(bubble); box.scrollTop=box.scrollHeight;
+            return bubble;
+        }
+        function museumContextForAI(){
+            return MUSEUMS.map(m=>({id:m.id,name:m.name,address:m.address,district:m.district,tags:m.tags,description:m.description,hours:m.hours,ticket:m.ticket,mapUrl:m.mapUrl}));
+        }
+        async function guideReply(message){
+            const box=document.getElementById('guideMessages');
+            appendGuideBubble(message,'user');
+            const pending=appendGuideBubble('Tui đang suy nghĩ và tìm bảo tàng phù hợp cho bà…','assistant','text-slate-500 italic');
+            const sendBtn=document.querySelector('#guidePanel form button');
+            if(sendBtn)sendBtn.disabled=true;
+            try {
+                const response=await fetch('/.netlify/functions/guide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,history:guideHistory.slice(-8),museums:museumContextForAI()})});
+                const data=await response.json().catch(()=>({}));
+                if(!response.ok) throw new Error(data.error||'Máy chủ AI chưa sẵn sàng.');
+                pending.remove();
+                const answer=String(data.answer||'Tui chưa có câu trả lời cho câu này. Bà thử hỏi lại theo cách khác nha.');
+                appendGuideBubble(answer,'assistant');
+                guideHistory.push({role:'user',content:message},{role:'assistant',content:answer});
+                if(Array.isArray(data.museumIds)&&data.museumIds.length){
+                    const matches=MUSEUMS.filter(m=>data.museumIds.includes(m.id));
+                    matches.slice(0,4).forEach(m=>{
+                        const card=document.createElement('div');card.className='bg-amber-50 border border-amber-100 rounded-xl p-3 mt-2';
+                        const name=document.createElement('p');name.className='font-extrabold text-slate-900';name.textContent=m.name;
+                        const detail=document.createElement('p');detail.className='text-xs text-slate-600 mt-1';detail.textContent=m.district+' · '+m.ticket;
+                        const actions=document.createElement('div');actions.className='flex flex-wrap gap-3 mt-2';
+                        const find=document.createElement('button');find.className='text-xs text-nlf-red font-bold';find.textContent='Xem trên website';find.onclick=()=>{closeExperience();document.getElementById('searchInput').value=m.name;handleSearch();document.getElementById('museumList').scrollIntoView({behavior:'smooth'});};
+                        const map=document.createElement('a');map.href=m.mapUrl;map.target='_blank';map.rel='noopener noreferrer';map.className='text-xs text-blue-700 font-bold';map.textContent='Mở Google Maps ↗';
+                        actions.append(find,map);card.append(name,detail,actions);box.appendChild(card);
+                    });
+                }
+            } catch(err) {
+                pending.remove();
+                appendGuideBubble('Tui chưa kết nối được AI lúc này. Có thể website chưa được cấu hình API key trên Netlify hoặc đã hết hạn mức. Bà vẫn có thể dùng phần tạo tour và hộ chiếu; quản trị viên cần kiểm tra biến môi trường OPENAI_API_KEY.','assistant');
+                console.error('Museum guide error:',err);
+            } finally { if(sendBtn)sendBtn.disabled=false; box.scrollTop=box.scrollHeight; }
+        }
+        function buildTour(){
+            const interest=document.getElementById('tourInterest').value, duration=Number(document.getElementById('tourDuration').value), district=document.getElementById('tourDistrict').value, company=document.getElementById('tourCompany').value;
+            let pool=MUSEUMS.filter(m=>district==='ALL'||m.district===district);
+            if(interest==='history')pool=pool.filter(m=>/chien tranh|lich su|quan khu|vu trang/i.test(m.name+' '+m.description+' '+m.tags.join(' ')));
+            if(interest==='art')pool=pool.filter(m=>/my thuat|nghe thuat|van hoa|phu nu/i.test(m.name+' '+m.description+' '+m.tags.join(' ')));
+            const max=duration===2?2:duration===4?3:4; const selected=pool.slice(0,max); const out=document.getElementById('tourResult');out.innerHTML='';
+            const heading=document.createElement('div');heading.className='bg-emerald-50 border border-emerald-100 rounded-2xl p-3';heading.innerHTML='<p class="font-black text-emerald-900">Tour gợi ý · '+(duration===2?'Khoảng 2 tiếng':duration===4?'Nửa ngày':'Một ngày')+'</p><p class="text-xs text-emerald-800 mt-1">Phù hợp cho: '+company+'. '+(district==='ALL'?'Có thể cần di chuyển giữa các khu vực.':'Khu vực: '+district+'.')+'</p>';out.appendChild(heading);
+            if(!selected.length){const empty=document.createElement('p');empty.className='text-sm text-slate-500 p-3';empty.textContent='Chưa có bảo tàng phù hợp với lựa chọn này trong danh sách. Thử đổi chủ đề hoặc khu vực nhé.';out.appendChild(empty);return;}
+            selected.forEach((m,i)=>{const card=document.createElement('div');card.className='flex gap-3 items-start border border-slate-200 rounded-2xl p-3';const num=document.createElement('span');num.className='w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center text-sm font-black shrink-0';num.textContent=String(i+1);const body=document.createElement('div');body.className='flex-1';const title=document.createElement('p');title.className='font-black text-sm';title.textContent=m.name;const desc=document.createElement('p');desc.className='text-xs text-slate-500 mt-1';desc.textContent=m.district+' · '+m.address;const map=document.createElement('a');map.href=m.mapUrl;map.target='_blank';map.rel='noopener';map.className='inline-block mt-2 text-xs font-bold text-nlf-red';map.textContent='Mở chỉ đường ↗';body.append(title,desc,map);card.append(num,body);out.appendChild(card);});
+            const note=document.createElement('p');note.className='text-[11px] text-slate-400';note.textContent='Tour được sắp theo chủ đề, chưa tối ưu tuyến đường và chưa kiểm tra giờ mở cửa theo thời gian thực.';out.appendChild(note);
+        }
+        function getPassport(){try{return JSON.parse(localStorage.getItem(PASSPORT_KEY)||'[]')}catch(e){return []}}
+        function togglePassport(id){let visits=getPassport();if(visits.includes(id))visits=visits.filter(x=>x!==id);else visits.push(id);localStorage.setItem(PASSPORT_KEY,JSON.stringify(visits));renderPassport()}
+        function renderPassport(){const visits=getPassport();document.getElementById('passportCount').textContent=visits.length;const list=document.getElementById('passportMuseumList');list.innerHTML='';MUSEUMS.forEach(m=>{const done=visits.includes(m.id);const row=document.createElement('div');row.className='flex items-center gap-3 border '+(done?'border-amber-200 bg-amber-50':'border-slate-200 bg-white')+' rounded-2xl p-3';const stamp=document.createElement('div');stamp.className='w-11 h-11 rounded-full border-2 '+(done?'border-amber-500 text-amber-700 bg-amber-100':'border-slate-300 text-slate-400')+' flex items-center justify-center shrink-0';stamp.innerHTML='<i class="fa-solid '+(done?'fa-stamp':'fa-landmark')+'"></i>';const textWrap=document.createElement('div');textWrap.className='flex-1 min-w-0';const name=document.createElement('p');name.className='font-extrabold text-sm';name.textContent=m.name;const district=document.createElement('p');district.className='text-xs text-slate-500';district.textContent=m.district;textWrap.append(name,district);const btn=document.createElement('button');btn.className='text-xs font-black rounded-xl px-3 py-2 '+(done?'bg-white border border-amber-200 text-amber-800':'bg-slate-900 text-white');btn.textContent=done?'Đã đóng dấu ✓':'Đóng dấu';btn.onclick=()=>togglePassport(m.id);row.append(stamp,textWrap,btn);list.appendChild(row)})}
+        function clearPassport(){if(!confirm('Bà muốn xóa tất cả dấu mộc trong hộ chiếu này chứ?'))return;localStorage.removeItem(PASSPORT_KEY);renderPassport()}
+
+        function resetFilters() {
+            activeTag = 'ALL';
+            activeDistrict = 'ALL';
+            searchQuery = '';
+            showOnlyBookmarks = false;
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            document.getElementById('activeTagBadge').innerText = 'Tất cả';
+            updateBookmarkBtnUI();
+            renderTagChips();
+            const btns = document.querySelectorAll('.district-btn');
+            btns.forEach((btn, index) => {
+                btn.className = index === 0
+                    ? 'district-btn active bg-slate-900 text-nlf-yellow font-black px-3 py-1 rounded-xl text-xs whitespace-nowrap transition shadow-sm'
+                    : 'district-btn bg-slate-100 text-slate-600 font-medium px-3 py-1 rounded-xl text-xs whitespace-nowrap transition hover:bg-slate-200';
+            });
+            filterAndRender();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'detailModal') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
